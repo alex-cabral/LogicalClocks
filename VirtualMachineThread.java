@@ -41,9 +41,14 @@ public class VirtualMachineThread extends Thread implements Runnable {
 	@Override
 	public void run() {
 		try{
-			Message message;
+			Message message = null;
 			while(running){
-				message = (Message) in.readObject();
+				try {
+					message = (Message) in.readObject();
+				} catch (ClassNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 				vm.addToMessageQueue(message); // has to be a Message object
 			}
 		}

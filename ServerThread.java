@@ -12,7 +12,6 @@ import java.util.ArrayList;
 		private int id;
 		private Socket socket;
 		private Server server;
-		private PrintWriter writer;
 		private ObjectOutputStream out;
 		
 		
@@ -24,6 +23,7 @@ import java.util.ArrayList;
 			this.socket = socket;
 			this.server = server;
 			this.id =  id;
+			System.out.println(id);
 		}
 
 		/**
@@ -57,11 +57,15 @@ import java.util.ArrayList;
 		public void run() {
 			try {
 	            //BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream())); // input from client
-	            DataInputStream reader = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
-				writer = new PrintWriter(socket.getOutputStream(), true);  // output to client
-	            writer.println("\n>> Welcome to the chat app! \n");
-				
-				
+	            ObjectInputStream reader = new ObjectInputStream(socket.getInputStream());
+				try {
+					Message m = (Message) reader.readObject();
+					server.sendMessage(m);
+				} catch (ClassNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+	            
 			// this code executes when the user enters QUIT or DELETE
 				server.removeThread(this);
 				socket.close();

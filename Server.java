@@ -15,9 +15,7 @@ public class Server {
 	 */
 	private int port;
 	private ArrayList<ServerThread> activeThreads;
-	private ArrayList<Message> unreadMessages;
 	private boolean running;
-	private final String delimiter = "-|::|-";
 	
 	/**
 	 * The constructor for the ChatServer class sets the port as specified by the user 
@@ -44,7 +42,7 @@ public class Server {
 			while (running) {
 				System.out.println("Server waiting on port : " + port); // for debugging purposes
 				Socket socket = serverSocket.accept(); // accept new connection from client
-				ServerThread thread = new ServerThread(socket, this, activeThreads.size()); // start a new thread on the client socket, set id of the thread to size of threads now
+				ServerThread thread = new ServerThread(socket, this, activeThreads.size() + 1); // start a new thread on the client socket, set id of the thread to size of threads now
 				activeThreads.add(thread); // add to the list of active threads
 				thread.start(); // start the thread
 			} 
@@ -70,87 +68,16 @@ public class Server {
 	}
 	
 	/**
-	 * This method checks for any unread messages when a user logs in or deletes their account
-	 * @param username
-	 */
-	public boolean checkForUnreadMessages(String username) {
-		int count = 0;
-		for (int i = 0; i < unreadMessages.size(); i++) {
-			Message m = unreadMessages.get(i);
-			if (m.getRecipient().equals(username)) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	/**
-	 * This method returns all of the unread messages for a specified user.
-	 * Because the messages are added to the end of the ArrayList when they are sent, 
-	 * then read from the ArrayList starting at the beginning, they should be in chronological order.
-	 * @param 	username searching for unread messages
-	 * @return	the ArrayList of unread messages
-	 */
-	public ArrayList<Message> getUnreadMessages(String username) {
-		ArrayList<Message> unreads = new ArrayList<Message>();
-		for (int i = 0; i < unreadMessages.size(); i++) {
-			Message m = unreadMessages.get(i);
-			if (m.getRecipient().equals(username)) {
-				unreads.add(m);
-				unreadMessages.remove(i); // then remove that message from the arraylist and decrement i because the values have shifted
-				i--;
-			}
-		}
-		/**
-		 * Then make sure the unreadMessages file is updated as well
-		 * Ideally this code would not be here so that the user can get their unread messages quickly, 
-		 * But in a non persisting server, we want to ensure the information is updated immediately.
-		 */
-		ArrayList<String> unreadStrings = new ArrayList<String>();
-		for (Message m : unreadMessages) {
-			unreadStrings.add(m.toString());
-		}
-		return unreads;
-	}
-	
-	/**
-	 * This method opens a file and adds a line to the end of it
-	 * It is used to store new usernames when an account is created and to store unsent messages
-	 * @param 	line, the line to add to the file
-	 * @param 	filename, the file to add the line to
-	 */
-	public void addLineToFile(String line, String filename) {
-	    FileWriter fileWriter;
-		try {
-			fileWriter = new FileWriter(filename, true); //Set true for append mode
-		    PrintWriter printWriter = new PrintWriter(fileWriter);
-		    printWriter.println(line);  //New line
-		    printWriter.close();
-		} catch (IOException e) {
-			System.out.println("Error saving " + line + " to " + filename + ": " + e);
-		} 
-	}
-	
-	/**
 	 * This method sends a message to a user who is in the database
 	 * @param 	sender, who sent the message
 	 * @param 	recipient, who is supposed to receive the message
 	 * @param 	message, the text to be sent
 	 * @return	boolean, true if the user is online and false if not to alert the recipient.
 	 */
-	public boolean sendMessage(String sender, String recipient, String message) {
-		ServerThread thread = checkThreads(recipient.toLowerCase());
-		if (thread != null) { // if  the user is online
-			thread.sendMessage(sender, message);
-			return true;
-		}
-		else { // otherwise store it in unread messages so it can be sent later when the user logs in
-			Message m = new Message(sender, recipient, message.replaceAll("\n", ""));
-			unreadMessages.add(m);
-			String messageString = sender + delimiter + recipient + delimiter + message; // use format dictated for the file
-			addLineToFile(messageString, messageFile);
-			return false;
-		}
+	public void sendMessage(Message m) {
+		int recipient = m.getRecipient();
+		ServerThread thread = activeThreads.get(recipient - 1);
+		thread.sendMessage(m);
 	}
 	
 	/**

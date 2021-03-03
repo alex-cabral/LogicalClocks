@@ -4,8 +4,8 @@ import java.util.ArrayList;
 
 
 /**
-	 * The ClientThread class controls the connection for each client to the server via a Socket.
-	 * Each time a new client is connected, a new instance of ClientThread is created.
+	 * The ServerThread class controls the connection for each virtual machine to the server via a Socket.
+	 * Each time a new client is connected, a new instance of ServerThread is created.
 	 * Because it uses threading, it extends the Thread class.
 	 */
 	public class ServerThread extends Thread{
@@ -13,7 +13,8 @@ import java.util.ArrayList;
 		private Socket socket;
 		private Server server;
 		private ObjectOutputStream out;
-		
+		private final int NUMVMS = 3;
+		private PrintWriter writer;
 		
 		/** 
 		 * The ClientThread constructor, which takes in a Socket and Server
@@ -23,8 +24,20 @@ import java.util.ArrayList;
 			this.socket = socket;
 			this.server = server;
 			this.id =  id;
-			System.out.println(id);
+			System.out.println("ServerThread " +id + " created.");
+			//checkNumVMs(id);
 		}
+		
+		/**
+		 * This method checks to see if the number of VMs on the server is equal to the number expected to run the program
+		 * If so, it sends a message to all of the VMs, so they will start running
+		 * @param	num, the number of VMs connected to the server
+		 */
+//		private void checkNumVMs(int num) {
+//			if (num == NUMVMS) {
+//				server.startThreads();
+//			}
+//		}
 
 		/**
 		 * This method returns the id associated with the virtual machine
@@ -41,12 +54,17 @@ import java.util.ArrayList;
 		 * @param 	message object to be sent
 		 */
 		public void sendMessage(Message m) {
-			try {
-				out.writeObject(m);
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			writer.println(m.toString());
+//			try {
+//				out.writeObject(m);
+//				out.flush();
+//			} catch (IOException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
+//			catch (NullPointerException e) {
+//				System.out.println("Null pointer writing message: " + id + " "  + e);
+//			}
 		}
 	
 		
@@ -55,25 +73,38 @@ import java.util.ArrayList;
 		 * It is very long with a lot of logic to handle the different cases from the user
 		 */
 		public void run() {
-			try {
-	            //BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream())); // input from client
-	            ObjectInputStream reader = new ObjectInputStream(socket.getInputStream());
-				try {
-					Message m = (Message) reader.readObject();
-					server.sendMessage(m);
-				} catch (ClassNotFoundException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-	            
-			// this code executes when the user enters QUIT or DELETE
-				server.removeThread(this);
-				socket.close();
+            try {
+            	//ObjectInputStream reader = new ObjectInputStream(socket.getInputStream());
+				//out = new ObjectOutputStream(socket.getOutputStream());
+//				
+//				Message start = new Message(-1, id, -1); // now get the VM running by sending a message using -1 to show it's from the server
+//				sendMessage(start);
+//				out.flush();
+	            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream())); // input from client
+				writer = new PrintWriter(socket.getOutputStream());
 				
-				
-			} catch (IOException e) {
+            	while (true) {
+    				try {
+    					String s = reader.readLine();
+    					Message m = Message.fromString(s);
+       					server.sendMessage(m);
+    				} 
+    				catch (EOFException e) {
+    						// do nothing
+    				}
+    				catch (Exception e) {
+    					e.printStackTrace();
+    				}
+            	}
+            }
+    	
+    			
+			 catch (IOException e) {
+				// TODO Auto-generated catch block
 				e.printStackTrace();
-			} 
+			}
+				// this code executes when the user enters QUIT or DELETE
+//				server.removeThread(this);
+//				socket.close();
 		}
-
-	}
+}

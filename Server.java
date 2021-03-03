@@ -42,9 +42,9 @@ public class Server {
 			while (running) {
 				System.out.println("Server waiting on port : " + port); // for debugging purposes
 				Socket socket = serverSocket.accept(); // accept new connection from client
-				ServerThread thread = new ServerThread(socket, this, activeThreads.size() + 1); // start a new thread on the client socket, set id of the thread to size of threads now
+				ServerThread thread = new ServerThread(socket, this, activeThreads.size()); // start a new thread on the client socket, set id of the thread to size of threads now
 				activeThreads.add(thread); // add to the list of active threads
-				thread.start(); // start the thread
+				thread.start();
 			} 
 			// this next try/catch took a while to figure out but is needed to actually close the ServerSocket and avoid resource leak
 			try { 
@@ -67,6 +67,12 @@ public class Server {
 		activeThreads.remove(thread);
 	}
 	
+	public void startThreads() {
+		for (ServerThread thread : activeThreads) {
+			thread.start();
+		}
+	}
+	
 	/**
 	 * This method sends a message to a user who is in the database
 	 * @param 	sender, who sent the message
@@ -76,7 +82,7 @@ public class Server {
 	 */
 	public void sendMessage(Message m) {
 		int recipient = m.getRecipient();
-		ServerThread thread = activeThreads.get(recipient - 1);
+		ServerThread thread = activeThreads.get(recipient);
 		thread.sendMessage(m);
 	}
 	

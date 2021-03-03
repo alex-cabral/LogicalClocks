@@ -2,9 +2,11 @@ import java.io.*;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-public class VirtualMachine {
+public class VirtualMachine implements Runnable {
 	private int id;
 	private int clock;
 	private String logFile;
@@ -13,7 +15,9 @@ public class VirtualMachine {
 	private ObjectOutputStream out;
 	private String server;
 	private int port;
-	private Socket socket;
+	private Socket socket;	
+	private int ticks;
+	private PrintWriter writer;
 	
 	/**
 	 * The constructor for the class
@@ -24,21 +28,37 @@ public class VirtualMachine {
 		this.id = id;
 		this.server = server;
 		this.port = port;
-		try {
-			socket = new Socket(server, port);
-		} catch (UnknownHostException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 		clock = 0;
 		logFile = "log" + id + ".txt";
 		createLogFile(logFile);
+		setTicks();
 		messageQueue = new LinkedList<Message>();
+		connectToServer(server, port);
+
+		logEvent("TICKS=" +ticks);
+	}
+	
+	public void setTicks() {
+		Random r = new Random();
+		ticks = r.nextInt(6) + 1;
+	}
+	
+	/**
+	 * This method handles all of the connection between the VM and the server
+	 * @param server
+	 * @param port
+	 */
+	public void connectToServer(String server, int port) {
 		try {
-			out = new ObjectOutputStream(socket.getOutputStream());
+			socket = new Socket(server, port);
+			writer = new PrintWriter(socket.getOutputStream(), true);
+			
+			ListenerThread listener = new ListenerThread(socket, this); 
+	        listener.start(); // handle listening from the server
+	        
+		} catch (UnknownHostException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -80,6 +100,7 @@ public class VirtualMachine {
 	 */
 	public void addToMessageQueue(Message m) {
 		messageQueue.add(m);
+		System.out.println(" working. " + messageQueue.size());
 	}
 	
 	/**
@@ -131,7 +152,7 @@ public class VirtualMachine {
 	 */
 	private int getRecipientID(int r) {
 		int recipient = id - r;
-		if (recipient <= 0) {
+		if (recipient < 0) {
 			recipient += 3;
 		}
 		return recipient;
@@ -139,12 +160,8 @@ public class VirtualMachine {
 	
 	private void sendMessage(int recipientID) {
 		Message m = new Message(id, recipientID, clock);
-		try {
-			out.writeObject(m);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		writer.println(m.toString());
+		writer.flush();
 	}
 	
 	/**
@@ -158,9 +175,8 @@ public class VirtualMachine {
 		return r.nextInt(10) + 1;
 	}
 	
-	public void runVM() {
-		Random r = new Random();
-		int ticks = r.nextInt(6) + 1;
+	public void run() {
+		System.out.println("Running VM " + id);
 		long millis = (long) (1.0 / ticks);
 		long endTime = System.nanoTime() + TimeUnit.NANOSECONDS.convert(1L, TimeUnit.MINUTES);
 		while (System.nanoTime() < endTime) {
@@ -172,6 +188,7 @@ public class VirtualMachine {
 				e.printStackTrace();
 			}
 		}
+		System.out.println("VM " + id + " done.");
 	}
 	
 	/**
@@ -191,15 +208,32 @@ public class VirtualMachine {
 	}
 	
 	public static void main(String[] args) {
-		if (args.length != 3) { 
-			System.err.println("Usage: java Client <host> <port> <vmID>");
+		if (args.length != 2) { 
+			System.err.println("Usage: java Client <host> <port>");
 			System.exit(1);
 		}
 		String host = args[0];
 		int port = Integer.parseInt(args[1]);
-		int vmID = Integer.parseInt(args[2]);
+//		
+//		VirtualMachine vm1 = new VirtualMachine(host, port, 0);
+//		System.out.println("VM1 created");
+//
+//		VirtualMachine vm2 = new VirtualMachine(host, port, 1);
+//		System.out.println("VM2 created");
+//
+//		VirtualMachine vm3 = new VirtualMachine(host, port, 2);
+//		System.out.println("VM3 created");
 		
-		VirtualMachine vm = new VirtualMachine(host, port, vmID);		
-		System.out.println("VM" + vmID + " created");
+		ExecutorService executor = Executors.newFixedThreadPool(3);
+		for (int i = 0; i <= 2; i++) {
+			VirtualMachine vm = new VirtualMachine(host, port, i);
+			System.out.println("Created VM " + i);
+			executor.execute(vm);
+		}
+
+//		vm1.run();
+//		vm2.run();
+//		vm3.run();
+		
 	}
 }

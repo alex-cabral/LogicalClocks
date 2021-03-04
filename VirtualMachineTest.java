@@ -27,10 +27,16 @@ class VirtualMachineTest {
 		assertEquals(vm.getClock(), 11);
 	}
 	
+	// make sure clock updates when passed in equal time
+	void testClockUpdate2() {
+		vm.updateLogicalClock(11);
+		assertEquals(vm.getClock(), 12);
+	}
+	
 	// make sure clock updates after getting a message with a higher time than itself
 	void testSendMessage1() {
 		vm.sendMessage(2);
-		assertEquals(vm2.getClock(), 12);
+		assertEquals(vm2.getClock(), 13);
 	}
 	
 	// make sure clock doesn't update after getting a message with a lower time than itself

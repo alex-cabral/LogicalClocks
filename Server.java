@@ -6,7 +6,7 @@ import java.net.*;
  * The Server class stores all of the state and functionality of the server.
  * This class can be run from the console, and should generally be run before the client class to ensure that the connection works.
  * Only one instance of the Server class is needed, even with multiple clients.
- * It contains a nested class, ClientThread, which handles all of the threading for multiple clients.
+ * It contains a nested class, ServerThread, which handles all of the threading for multiple clients.
  */
 public class Server {
 	
@@ -18,10 +18,8 @@ public class Server {
 	private boolean running;
 	
 	/**
-	 * The constructor for the ChatServer class sets the port as specified by the user 
+	 * The constructor for the Server class sets the port as specified by the user 
 	 * and initializes an array list to store the client threads.
-	 * It also populates the array list of usernames that already exist in the app so that duplicates are not created
-	 * Finally, it initializes a new Array List to store the usernames of people logged in.  Initially that is empty.
 	 * @param port
 	 */
 	public Server(int port) {
@@ -60,25 +58,8 @@ public class Server {
 	}
 	
 	/**
-	 * This method removes a thread when a user chooses to quit the program.
-	 * @param	the ServerThread to remove
-	 */
-	public void removeThread(ServerThread thread) {
-		activeThreads.remove(thread);
-	}
-	
-	public void startThreads() {
-		for (ServerThread thread : activeThreads) {
-			thread.start();
-		}
-	}
-	
-	/**
 	 * This method sends a message to a user who is in the database
-	 * @param 	sender, who sent the message
-	 * @param 	recipient, who is supposed to receive the message
-	 * @param 	message, the text to be sent
-	 * @return	boolean, true if the user is online and false if not to alert the recipient.
+	 * @param 	message, the message to be sent
 	 */
 	public void sendMessage(Message m) {
 		int recipient = m.getRecipient();
@@ -87,7 +68,7 @@ public class Server {
 	}
 	
 	/**
-	 * The main method is run immediately when the ChatServer class is run from the console.
+	 * The main method is run immediately when the Server class is run from the console.
 	 * It starts the server at the port specified by the user (or the default if none is specified).
 	 * @param args
 	 */
@@ -108,7 +89,6 @@ public class Server {
 			System.exit(1);
 		}
 		
-		// might want to add a try/catch around this
 		Server server = new Server(port);
 		server.start();
 	}

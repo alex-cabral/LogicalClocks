@@ -1,16 +1,22 @@
+/**
+ * This class includes all of the state and functionality for the Virtual Machine
+ * It includes a main method to run everything when a new instance of the class is created
+ */
+
 import java.io.*;
-import java.net.Socket;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public class VirtualMachine {
+	/**
+	 * The fields of the VirtualMachine include a unique id, logical clock, components for connection
+	 */
 	private int id;
 	private int clock;
 	private String logFile;
 	private FileWriter fileWriter;
 	private Queue<Message> messageQueue;
-	private ObjectOutputStream out;
 	private String server;
 	private int port;
 	private Socket socket;	
@@ -19,7 +25,7 @@ public class VirtualMachine {
 	private ListenerThread listener;
 	
 	/**
-	 * The constructor for the class
+	 * The constructor for the class, which sets the fields, creates the log file, and creates the connection to the server
 	 * @param 	ticks, the number of ticks per second to control how often to perform actions
 	 * @param 	id, the integer id associated with this instance of the Virtual Machine, for logging and message sending
 	 */
@@ -30,24 +36,19 @@ public class VirtualMachine {
 		clock = 0;
 		logFile = "log" + id + ".txt";
 		createLogFile(logFile);
-		setTicks();
+		ticks = generateRandomNumber(6);
 		messageQueue = new LinkedList<Message>();
 		connectToServer(server, port);
-
 		logEvent("TICKS=" +ticks);
 	}
 	
-	public void setTicks() {
-		Random r = new Random();
-		ticks = r.nextInt(6) + 1;
-	}
-	
 	/**
-	 * This method handles all of the connection between the VM and the server
+	 * This method handles all of the connection between the VM and the server, including the socket, PrintWriter to send to the server
+	 * and creation of a separate ListenerThread to receive messages from the server
 	 * @param server
 	 * @param port
 	 */
-	public void connectToServer(String server, int port) {
+	private void connectToServer(String server, int port) {
 		try {
 			socket = new Socket(server, port);
 			writer = new PrintWriter(socket.getOutputStream(), true);
@@ -56,17 +57,14 @@ public class VirtualMachine {
 	        listener.start(); // handle listening from the server
 	        
 		} catch (UnknownHostException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			System.out.println("Cannot connect to host " + e);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 	
 	/**
 	 * This method creates a log file for the virtual machine. The file will be unique because the name is based on the unique VM id
-	 * This method is only ever called internally
 	 * @param 	filename
 	 */
 	private void createLogFile(String filename) {
@@ -83,12 +81,12 @@ public class VirtualMachine {
 	 * Every time the logical clock ticks, the VM should conduct an event
 	 * First check for unread messages, if there are some that's the event, otherwise generate a random number
 	 */
-	public void conductEvent() {
+	private void conductEvent() {
 		if (messageQueue.size() > 0) {
 			readMessageFromQueue();
 		}
 		else {
-			int r = generateRandomNumber();
+			int r = generateRandomNumber(10); // here we changed the value to check different internal event probabilities
 			selectEvent(r);
 		}
 	}
@@ -97,14 +95,14 @@ public class VirtualMachine {
 	 * This method provides access for the VM's listening thread to add new messages to the queue as they come in from the server
 	 * @param 	m, the message to add to the queue
 	 */
-	public synchronized void addToMessageQueue(Message m) {
+	public void addToMessageQueue(Message m) {
 		messageQueue.add(m);
 	}
 	
 	/**
-	 * This mehthod 
+	 * This method reads from the message queue, sets the updated clock time, then logs the event
 	 */
-	private synchronized void readMessageFromQueue() {
+	private void readMessageFromQueue() {
 		Message m = messageQueue.remove();
 		int otherClock =  m.getMessage();
 		updateLogicalClock(otherClock);
@@ -123,6 +121,13 @@ public class VirtualMachine {
 	}
 	
 	
+	/**
+	 * This method determines the event based on the random number generated
+	 * The methods are linked to the numbers as specified in the assignment
+	 * A value of 1 or 2 sends a message to a single VM, a value of 3 sends to both,
+	 * and any other value results in an internal event
+	 * @param r
+	 */
 	private void selectEvent(int r) {
 		String event = "";
 		if (r <= 2) { // send one message
@@ -145,7 +150,7 @@ public class VirtualMachine {
 	}
 	
 	/**
-	 * 
+	 * This method determines which VM to send a message to based on the random number and VM ID values
 	 * @param r
 	 */
 	private int getRecipientID(int r) {
@@ -156,26 +161,37 @@ public class VirtualMachine {
 		return recipient;
 	}
 	
+	/**
+	 * This method uses the PrintWriter to send a message to another recipient.
+	 * @param recipientID
+	 */
 	private void sendMessage(int recipientID) {
 		Message m = new Message(id, recipientID, clock);
 		writer.println(m.toString());
-		writer.flush();
+		writer.flush(); // need to flush the writer each time
 	}
 	
 	/**
 	 * This method generates a random integer in the range of 1 to 10, inclusive. 
 	 * The random number is then used to determine the action the VM should take.
-	 * This method will only get called internally so is private
+	 * This method will only get called internally so is private.
+	 * To test lower probability of internal event and clock variation, we changed the max random number passed in here
 	 * @return	the randomly generated integer
 	 */
-	private int generateRandomNumber() {
+	private int generateRandomNumber(int n) {
 		Random r = new Random();
-		return r.nextInt(10) + 1;
+		return r.nextInt(n) + 1;
 	}
 	
+	
+	/**
+	 * This method runs the VM logic
+	 * It sets a delay to the ticks per second, in milliseconds, and conducts events for one minute
+	 * This method uses System.nanoTime() because it is supposed to be more stable than other methods
+	 */
 	public void runVM() {
 		System.out.println("Running VM " + id);
-		long delay = (long) (1.0 / ticks); // divide 1 second by number of ticks per second and that's the delay
+		long delay = (long) (1000.0 / ticks); // divide 1 second by number of ticks per second and that's the delay
 		long endTime = System.nanoTime() + TimeUnit.NANOSECONDS.convert(1L, TimeUnit.MINUTES);
 		
 		// run for one minute
@@ -217,6 +233,11 @@ public class VirtualMachine {
 		} 
 	}
 	
+	/**
+	 * This method runs every time a new VirtualMachine is created
+	 * It sets the host, port, and VM id from the command line and runs the VM
+	 * @param args
+	 */
 	public static void main(String[] args) {
 		if (args.length != 3) { 
 			System.err.println("Usage: java Client <host> <port> <id>");
@@ -228,28 +249,5 @@ public class VirtualMachine {
 		
 		VirtualMachine vm = new VirtualMachine(host, port, id);
 		vm.runVM();
-//		
-//		VirtualMachine vm1 = new VirtualMachine(host, port, 0);
-//		System.out.println("VM1 created");
-//
-//		VirtualMachine vm2 = new VirtualMachine(host, port, 1);
-//		System.out.println("VM2 created");
-//
-//		VirtualMachine vm3 = new VirtualMachine(host, port, 2);
-//		System.out.println("VM3 created");
-		
-//		ExecutorService executor = Executors.newFixedThreadPool(3);
-//		for (int i = 0; i <= 2; i++) {
-//			VirtualMachine vm = new VirtualMachine(host, port, i);
-//			System.out.println("Created VM " + i);
-//			executor.execute(vm);
-//		}
-//		
-//		executor.shutdown();
-
-//		vm1.run();
-//		vm2.run();
-//		vm3.run();
-		
 	}
 }

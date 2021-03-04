@@ -7,12 +7,19 @@ import java.io.*;
 import java.net.*;
 
 public class ListenerThread extends Thread implements Runnable {
+	/**
+	 * The fields of the ListenerThread include components to connect to and communicate with the server
+	 */
 	private Socket socket;
-	//private ObjectInputStream in;
 	private boolean running = true;
 	private VirtualMachine vm;
 	private BufferedReader in;
 	
+	/**
+	 * Constructor to set the fields
+	 * @param socket
+	 * @param vm
+	 */
 	public ListenerThread(Socket socket, VirtualMachine vm){
 		this.socket = socket;
 		this.vm = vm;
@@ -20,7 +27,7 @@ public class ListenerThread extends Thread implements Runnable {
 	
 	/**
 	 * This method sets the boolean running to false so that the thread will stop running
-	 * This is only called when the user enters QUIT
+	 * This is only called when the VM is done running
 	 */
 	public void stopRunning() {
 		running = false;
@@ -28,7 +35,7 @@ public class ListenerThread extends Thread implements Runnable {
 	
 	/**
 	 * This method overrides the one from the Runnable interface (as it must)
-	 * In this method, we simply loop infinitely reading in messages from the server as they come in and outputting them to the client.
+	 * In this method, we simply loop infinitely reading in messages from the server as they come in and adding them to the VMs queue.
 	 */
 	@Override
 	public void run() {
@@ -38,13 +45,9 @@ public class ListenerThread extends Thread implements Runnable {
 			while(running){
 				try {
 					String s = in.readLine();
-					//String[] components = s.split(" ");
-					message = Message.fromString(s);
-					//message = new Message(Integer.parseInt(components[0]), Integer.parseInt(components[1]), Integer.parseInt(components[2]));
-					vm.addToMessageQueue(message); // has to be a Message object
+					message = Message.fromString(s); // convert to Message object
+					vm.addToMessageQueue(message); 
 				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					//e.printStackTrace();
 					// do nothing
 				}
 			}

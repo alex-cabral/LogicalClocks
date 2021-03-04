@@ -1,6 +1,7 @@
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
+import java.util.LinkedList;
 
 
 /**
@@ -12,12 +13,10 @@ import java.util.ArrayList;
 		private int id;
 		private Socket socket;
 		private Server server;
-		private ObjectOutputStream out;
-		private final int NUMVMS = 3;
 		private PrintWriter writer;
 		
 		/** 
-		 * The ClientThread constructor, which takes in a Socket and Server
+		 * The ServerThread constructor, which takes in a Socket, Server, and id to tie it to the VM
 		 * @param 	socket and server this thread connect to
 		 */
 		public ServerThread(Socket socket, Server server, int id) {
@@ -25,19 +24,8 @@ import java.util.ArrayList;
 			this.server = server;
 			this.id =  id;
 			System.out.println("ServerThread " +id + " created.");
-			//checkNumVMs(id);
 		}
 		
-		/**
-		 * This method checks to see if the number of VMs on the server is equal to the number expected to run the program
-		 * If so, it sends a message to all of the VMs, so they will start running
-		 * @param	num, the number of VMs connected to the server
-		 */
-//		private void checkNumVMs(int num) {
-//			if (num == NUMVMS) {
-//				server.startThreads();
-//			}
-//		}
 
 		/**
 		 * This method returns the id associated with the virtual machine
@@ -55,33 +43,16 @@ import java.util.ArrayList;
 		 */
 		public void sendMessage(Message m) {
 			writer.println(m.toString());
-//			try {
-//				out.writeObject(m);
-//				out.flush();
-//			} catch (IOException e) {
-//				// TODO Auto-generated catch block
-//				e.printStackTrace();
-//			}
-//			catch (NullPointerException e) {
-//				System.out.println("Null pointer writing message: " + id + " "  + e);
-//			}
 		}
-	
 		
 		/**
-		 * This method runs the thread
-		 * It is very long with a lot of logic to handle the different cases from the user
+		 * This method runs the thread to listen to messages from VMs and direct them appropriately
+		 * The catch statements are all empty to hide exceptions that bubble up when the VM disconnects from the server.
 		 */
 		public void run() {
             try {
-            	//ObjectInputStream reader = new ObjectInputStream(socket.getInputStream());
-				//out = new ObjectOutputStream(socket.getOutputStream());
-//				
-//				Message start = new Message(-1, id, -1); // now get the VM running by sending a message using -1 to show it's from the server
-//				sendMessage(start);
-//				out.flush();
 	            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream())); // input from client
-				writer = new PrintWriter(socket.getOutputStream());
+				writer = new PrintWriter(socket.getOutputStream(), true);
 				
             	while (true) {
     				try {
@@ -97,14 +68,8 @@ import java.util.ArrayList;
     				}
             	}
             }
-    	
-    			
 			 catch (IOException e) {
-				// TODO Auto-generated catch block
-				//e.printStackTrace();
+				// do nothing
 			}
-				// this code executes when the user enters QUIT or DELETE
-//				server.removeThread(this);
-//				socket.close();
 		}
 }

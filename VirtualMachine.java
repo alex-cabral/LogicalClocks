@@ -78,6 +78,14 @@ public class VirtualMachine {
 	}
 	
 	/**
+	 * Getter method for unit tests
+	 * @return
+	 */
+	public int getClock() {
+		return clock;
+	}
+	
+	/**
 	 * Every time the logical clock ticks, the VM should conduct an event
 	 * First check for unread messages, if there are some that's the event, otherwise generate a random number
 	 */
@@ -116,7 +124,7 @@ public class VirtualMachine {
 	 * This will also work for sending messages and internal events by just passing in the current max value, then adding 1 to that
 	 * @param otherClock
 	 */
-	private void updateLogicalClock(int otherClock) {
+	public void updateLogicalClock(int otherClock) {
 		clock =  Math.max(clock,  otherClock + 1);
 	}
 	
@@ -153,7 +161,7 @@ public class VirtualMachine {
 	 * This method determines which VM to send a message to based on the random number and VM ID values
 	 * @param r
 	 */
-	private int getRecipientID(int r) {
+	public int getRecipientID(int r) {
 		int recipient = id - r;
 		if (recipient < 0) {
 			recipient += 3;
@@ -165,7 +173,7 @@ public class VirtualMachine {
 	 * This method uses the PrintWriter to send a message to another recipient.
 	 * @param recipientID
 	 */
-	private void sendMessage(int recipientID) {
+	public void sendMessage(int recipientID) {
 		Message m = new Message(id, recipientID, clock);
 		writer.println(m.toString());
 		writer.flush(); // need to flush the writer each time

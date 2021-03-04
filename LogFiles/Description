@@ -1,0 +1,9 @@
+This directory stores the log files created during tests of the system.
+
+The first line of the file contains the number of ticks that the VM has per second, the system time at starting (from System.nano()), and the initial Logical Clock value (always 0).
+
+The log files with 'run' in the filename are from the basic test runs.
+
+The files with 'lowinternal' in the filename are from the test lowering the probability of internal events.
+
+The files with 'lowvariation' in the filename are from the test making smaller variation in the clock cycles.

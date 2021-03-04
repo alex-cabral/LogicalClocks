@@ -23,3 +23,5 @@ where the host is your local host, found by typing `ifconfig` in the terminal wi
 At this point, you should see output telling you that the Virtual Machine instances are running. You will also get console messages when they are done running. At this point, you can quit the server program as well.
 
 The logs for each VM are stored in text files, with the number in the file matching the id of the VM. All of the log files we generated can be found in the folder LogFiles.
+
+The findings and analysis of our experiments are in Notes.pdf, along with our design notes and decisions.

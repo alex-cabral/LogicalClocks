@@ -41,8 +41,8 @@ class VirtualMachineTest {
 	
 	// make sure clock doesn't update after getting a message with a lower time than itself
 	void testSendMessage2() {
-		vm2.sendMessage(1);
-		assertEquals(vm.getClock(), 10);
+		vm.sendMessage(2);
+		assertEquals(vm2.getClock(), 13);
 	}
 
 }

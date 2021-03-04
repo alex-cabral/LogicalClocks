@@ -90,10 +90,10 @@ import java.util.ArrayList;
        					server.sendMessage(m);
     				} 
     				catch (EOFException e) {
-    						// do nothing
+    					// do nothing
     				}
     				catch (Exception e) {
-    					e.printStackTrace();
+    					// do nothing
     				}
             	}
             }
@@ -101,7 +101,7 @@ import java.util.ArrayList;
     			
 			 catch (IOException e) {
 				// TODO Auto-generated catch block
-				e.printStackTrace();
+				//e.printStackTrace();
 			}
 				// this code executes when the user enters QUIT or DELETE
 //				server.removeThread(this);

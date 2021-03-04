@@ -2,11 +2,9 @@ import java.io.*;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-public class VirtualMachine implements Runnable {
+public class VirtualMachine {
 	private int id;
 	private int clock;
 	private String logFile;
@@ -18,6 +16,7 @@ public class VirtualMachine implements Runnable {
 	private Socket socket;	
 	private int ticks;
 	private PrintWriter writer;
+	private ListenerThread listener;
 	
 	/**
 	 * The constructor for the class
@@ -53,7 +52,7 @@ public class VirtualMachine implements Runnable {
 			socket = new Socket(server, port);
 			writer = new PrintWriter(socket.getOutputStream(), true);
 			
-			ListenerThread listener = new ListenerThread(socket, this); 
+			listener = new ListenerThread(socket, this); 
 	        listener.start(); // handle listening from the server
 	        
 		} catch (UnknownHostException e) {
@@ -98,15 +97,14 @@ public class VirtualMachine implements Runnable {
 	 * This method provides access for the VM's listening thread to add new messages to the queue as they come in from the server
 	 * @param 	m, the message to add to the queue
 	 */
-	public void addToMessageQueue(Message m) {
+	public synchronized void addToMessageQueue(Message m) {
 		messageQueue.add(m);
-		System.out.println(" working. " + messageQueue.size());
 	}
 	
 	/**
 	 * This mehthod 
 	 */
-	private void readMessageFromQueue() {
+	private synchronized void readMessageFromQueue() {
 		Message m = messageQueue.remove();
 		int otherClock =  m.getMessage();
 		updateLogicalClock(otherClock);
@@ -175,20 +173,32 @@ public class VirtualMachine implements Runnable {
 		return r.nextInt(10) + 1;
 	}
 	
-	public void run() {
+	public void runVM() {
 		System.out.println("Running VM " + id);
-		long millis = (long) (1.0 / ticks);
+		long delay = (long) (1.0 / ticks); // divide 1 second by number of ticks per second and that's the delay
 		long endTime = System.nanoTime() + TimeUnit.NANOSECONDS.convert(1L, TimeUnit.MINUTES);
+		
+		// run for one minute
 		while (System.nanoTime() < endTime) {
 			conductEvent();
 			try {
-				Thread.sleep(millis);
+				Thread.sleep(delay);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
 		System.out.println("VM " + id + " done.");
+		
+		// then close all of the connections
+		try { 
+			writer.close();
+			listener.stopRunning();
+			socket.close();
+			
+		} catch (IOException e) {
+			// do nothing
+		}
 	}
 	
 	/**
@@ -208,12 +218,16 @@ public class VirtualMachine implements Runnable {
 	}
 	
 	public static void main(String[] args) {
-		if (args.length != 2) { 
-			System.err.println("Usage: java Client <host> <port>");
+		if (args.length != 3) { 
+			System.err.println("Usage: java Client <host> <port> <id>");
 			System.exit(1);
 		}
 		String host = args[0];
 		int port = Integer.parseInt(args[1]);
+		int id = Integer.parseInt(args[2]);
+		
+		VirtualMachine vm = new VirtualMachine(host, port, id);
+		vm.runVM();
 //		
 //		VirtualMachine vm1 = new VirtualMachine(host, port, 0);
 //		System.out.println("VM1 created");
@@ -224,12 +238,14 @@ public class VirtualMachine implements Runnable {
 //		VirtualMachine vm3 = new VirtualMachine(host, port, 2);
 //		System.out.println("VM3 created");
 		
-		ExecutorService executor = Executors.newFixedThreadPool(3);
-		for (int i = 0; i <= 2; i++) {
-			VirtualMachine vm = new VirtualMachine(host, port, i);
-			System.out.println("Created VM " + i);
-			executor.execute(vm);
-		}
+//		ExecutorService executor = Executors.newFixedThreadPool(3);
+//		for (int i = 0; i <= 2; i++) {
+//			VirtualMachine vm = new VirtualMachine(host, port, i);
+//			System.out.println("Created VM " + i);
+//			executor.execute(vm);
+//		}
+//		
+//		executor.shutdown();
 
 //		vm1.run();
 //		vm2.run();

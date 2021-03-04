@@ -44,13 +44,14 @@ public class ListenerThread extends Thread implements Runnable {
 					vm.addToMessageQueue(message); // has to be a Message object
 				} catch (Exception e) {
 					// TODO Auto-generated catch block
-					e.printStackTrace();
+					//e.printStackTrace();
+					// do nothing
 				}
 			}
+			socket.close();
 		}
-		catch(IOException e){
-			System.err.println("Error receiving message from server: " + e);
+		catch(Exception e){
+			System.err.println("Error receiving message from server.");
 		}
-
 	}
 }

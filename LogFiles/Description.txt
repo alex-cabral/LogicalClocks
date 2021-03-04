@@ -1,0 +1,5 @@
+Folder storing the log files from five one-minute runs on three virtual machines.
+
+The first line of the file includes the VM's ticks per second, the starting system time (from System.nano()), and the starting Logical Clock time (always 0).
+
+Each run is in a separate zip file, with the log of each VM as a text file in the folder.
